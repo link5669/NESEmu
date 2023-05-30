@@ -1,3 +1,6 @@
+mod instructions;
+mod addressing_modes;
+
 pub struct CPU {
     accumulator_register: u8,
     x_register: u8,
@@ -91,7 +94,6 @@ pub struct CPU {
                     self.update_flags_lda();
                     self.program_counter +=1;
                 }
-                //zero page
                 0xA5 => {
                     let addr = self.mem_read(self.program_counter) as u16;
                     let val = self.mem_read(addr);
@@ -243,4 +245,6 @@ pub struct CPU {
 
  fn main() {let mut cpu = CPU::new();
     // cpu.run(vec![0xa9, 0x05, 0x00]);
+
+
  }
