@@ -7,5 +7,5 @@ pub enum AddressingMode {
     ABSOLUTE_Y,
     INDIRECT_X,
     INDIRECT_Y,
-    NONE
+    IMPLIED
 }
