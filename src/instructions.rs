@@ -22,6 +22,9 @@ impl Instruction {
     pub fn getIncrement(&self) -> u8 {
         self.increment
     }
+    pub fn getOpcode(&self) -> u8 {
+        self.opcode
+    }
 }
 
 lazy_static! {
@@ -62,6 +65,15 @@ lazy_static! {
         Instruction::new("AND", 0x39, AddressingMode::ABSOLUTE_Y, 3),
         Instruction::new("AND", 0x21, AddressingMode::INDIRECT_X, 2),
         Instruction::new("AND", 0x31, AddressingMode::INDIRECT_Y, 2),
+        Instruction::new("ASL", 0x29, AddressingMode::IMMEDIATE, 1),
+        Instruction::new("ASL", 0x25, AddressingMode::IMMEDIATE, 1),
+        Instruction::new("ASL", 0x35, AddressingMode::IMMEDIATE, 1),
+        Instruction::new("ASL", 0x2D, AddressingMode::IMMEDIATE, 1),
+        Instruction::new("ASL", 0x3D, AddressingMode::IMMEDIATE, 1),
+        Instruction::new("ASL", 0x39, AddressingMode::IMMEDIATE, 1),
+        Instruction::new("ASL", 0x21, AddressingMode::IMMEDIATE, 1),
+        Instruction::new("ASL", 0x31, AddressingMode::IMMEDIATE, 1),
+        Instruction::new("BCC", 0x31, AddressingMode::RELATIVE, 0),
     ];
 }
 

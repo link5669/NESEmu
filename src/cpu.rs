@@ -69,19 +69,6 @@ pub struct CPU {
         self.program_counter = self.mem_read_u16(0xFFFC);
     }
 
-    fn update_flags_lda(&mut self) {
-        if self.accumulator_register == 0 {
-            self.flags_register = self.flags_register | 0b00000010;
-        } else {
-            self.flags_register = self.flags_register & 0b11111101;
-        }
-        if self.accumulator_register & 0b10000000 == 1 {
-            self.flags_register = self.flags_register | 0b10000000;
-        } else {
-            self.flags_register = self.flags_register & 0b01111111;
-        }
-    }
-
     fn match_addressing_mode(&mut self, instr: Instruction) -> u16 {
         match instr.getAddressingMode() {
             AddressingMode::IMMEDIATE => {
@@ -125,7 +112,7 @@ pub struct CPU {
     fn lda(&mut self, instr: Instruction) {
         let val = self.mem_read(self.match_addressing_mode(instr));
         self.accumulator_register = val;
-        self.update_flags_lda();
+        self.set_neg_and_zero_flags(self.accumulator_register);
     }
 
     fn sta(&mut self, instr: Instruction) {
@@ -149,15 +136,49 @@ pub struct CPU {
         self.accumulator_register = sum as u8;
     }
 
-    fn add(&mut self, instr: Instruction) {
-        let addr = self.match_addressing_mode(instr);
-        let val = self.mem_read(addr);
-        self.accumulator_register &= val;
-        if self.accumulator_register == 0 {
+    fn set_neg_and_zero_flags(&mut self, ref_point: u8) {
+        if ref_point == 0 {
             self.flags_register |= 0b00000010;
         } else {
             self.flags_register &= 0b11111101;
         }
+        if (ref_point & 0b10000000) != 0 {
+            self.flags_register |= 0b10000000;
+        } else {
+            self.flags_register &= 0b01111111;
+        }
+    }
+
+    fn asl(&mut self, instr: Instruction) {
+        if instr.getOpcode() == 0x0A {
+            let carry = self.accumulator_register & 0b10000000;
+            if carry != 0 {
+                self.flags_register |= 0b00000001;
+            } else {
+                self.flags_register &= 0b11111110;
+            }
+            self.accumulator_register = self.accumulator_register << 1;
+        } else {
+            let data = self.mem_read(self.match_addressing_mode(instr));
+            let carry = data & 0b10000000;
+            if carry != 0 {
+                self.flags_register |= 0b00000001;
+            } else {
+                self.flags_register &= 0b11111110;
+            }
+            self.mem_write(self.match_addressing_mode(instr),  data << 1);
+        }
+    }
+
+    fn and(&mut self, instr: Instruction) {
+        let addr = self.match_addressing_mode(instr);
+        let val = self.mem_read(addr);
+        self.accumulator_register &= val;
+        self.set_neg_and_zero_flags(self.accumulator_register);
+    }
+
+    fn bcc(&mut self, instr: Instruction) {
+        
     }
   
     pub fn run(&mut self) {
@@ -179,29 +200,11 @@ pub struct CPU {
                 }
                 0xAA => {
                     self.x_register = self.accumulator_register;
-                    if self.x_register == 0 {
-                        self.flags_register = self.flags_register | 0b00000010;
-                    } else {
-                        self.flags_register = self.flags_register & 0b11111101;
-                    }
-                    if self.x_register & 0b10000000 == 1 {
-                        self.flags_register = self.flags_register | 0b10000000;
-                    } else {
-                        self.flags_register = self.flags_register & 0b01111111;
-                    }
+                    self.set_neg_and_zero_flags(self.x_register);
                 }
                 0xE8 => {
                     self.x_register += 1;
-                    if self.x_register == 0 {
-                        self.flags_register = self.flags_register | 0b00000010;
-                    } else {
-                        self.flags_register = self.flags_register & 0b11111101;
-                    }
-                    if self.x_register & 0b10000000 == 1 {
-                        self.flags_register = self.flags_register | 0b10000000;
-                    } else {
-                        self.flags_register = self.flags_register & 0b01111111;
-                    }
+                    self.set_neg_and_zero_flags(self.x_register)
                 }
                 0x85 | 0x95 | 0x8D | 0x9D | 0x99 | 0x81 | 0x91 => {
                     self.sta(instruction);
@@ -210,7 +213,10 @@ pub struct CPU {
                     self.adc(instruction);
                 }
                 0x29 | 0x25 | 0x35 | 0x2D | 0x3D | 0x39 | 0x21 | 0x31 => {
-                    self.add(instruction);
+                    self.and(instruction);
+                }
+                0x0A | 0x06 | 0x16 | 0x0E | 0x1E => {
+                    self.asl(instruction);
                 }
                 _ => {
                     print!("else!");
@@ -223,6 +229,4 @@ pub struct CPU {
 
  fn main() {let mut cpu = CPU::new();
     // cpu.run(vec![0xa9, 0x05, 0x00]);
-
-
  }
