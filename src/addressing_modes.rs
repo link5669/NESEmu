@@ -1,3 +1,5 @@
+#[derive(Clone)]
+#[allow(non_camel_case_types)]
 pub enum AddressingMode {
     IMMEDIATE,
     ZERO_PAGE,

@@ -1,4 +1,4 @@
-use crate::{addressing_modes::AddressingMode, instructions::{find_instruction_by_name, Instruction}};
+use crate::{addressing_modes::AddressingMode, instructions::{find_instruction_by_opcode, Instruction}};
 
 pub struct CPU {
     accumulator_register: u8,
@@ -69,7 +69,7 @@ pub struct CPU {
         self.program_counter = self.mem_read_u16(0xFFFC);
     }
 
-    fn match_addressing_mode(&mut self, instr: Instruction) -> u16 {
+    fn match_addressing_mode(&mut self, instr: &Instruction) -> u16 {
         match instr.getAddressingMode() {
             AddressingMode::IMMEDIATE => {
                 self.program_counter
@@ -106,20 +106,26 @@ pub struct CPU {
                 let hi = self.mem_read(ptr.wrapping_add(1) as u16);
                 (hi as u16) << 8 | (lo as u16)
             }
+            _ => {
+                println!("not supported yet!");
+                0x0
+            }
         } 
     }
 
-    fn lda(&mut self, instr: Instruction) {
-        let val = self.mem_read(self.match_addressing_mode(instr));
+    fn lda(&mut self, instr: &Instruction) {
+        let addr = self.match_addressing_mode(instr);
+        let val = self.mem_read(addr);
         self.accumulator_register = val;
         self.set_neg_and_zero_flags(self.accumulator_register);
     }
 
-    fn sta(&mut self, instr: Instruction) {
-        self.mem_write(self.match_addressing_mode(instr), self.accumulator_register);
+    fn sta(&mut self, instr: &Instruction) {
+        let addr= self.match_addressing_mode(instr);
+        self.mem_write(addr, self.accumulator_register);
     }
 
-    fn adc(&mut self, instr: Instruction) {
+    fn adc(&mut self, instr: &Instruction) {
         let addr = self.match_addressing_mode(instr);
         let val = self.mem_read(addr);
         let sum: u16 = val as u16 + self.accumulator_register as u16 + (self.flags_register & 0b00000001) as u16;
@@ -149,8 +155,8 @@ pub struct CPU {
         }
     }
 
-    fn asl(&mut self, instr: Instruction) {
-        if instr.getOpcode() == 0x0A {
+    fn asl(&mut self, instr: &Instruction) {
+        if *instr.getOpcode() == 0x0A {
             let carry = self.accumulator_register & 0b10000000;
             if carry != 0 {
                 self.flags_register |= 0b00000001;
@@ -159,33 +165,35 @@ pub struct CPU {
             }
             self.accumulator_register = self.accumulator_register << 1;
         } else {
-            let data = self.mem_read(self.match_addressing_mode(instr));
+            let addr = self.match_addressing_mode(instr);
+            let data = self.mem_read(addr);
             let carry = data & 0b10000000;
             if carry != 0 {
                 self.flags_register |= 0b00000001;
             } else {
                 self.flags_register &= 0b11111110;
             }
-            self.mem_write(self.match_addressing_mode(instr),  data << 1);
+            self.mem_write(addr,  data << 1);
         }
     }
 
-    fn and(&mut self, instr: Instruction) {
+    fn and(&mut self, instr: &Instruction) {
         let addr = self.match_addressing_mode(instr);
         let val = self.mem_read(addr);
         self.accumulator_register &= val;
         self.set_neg_and_zero_flags(self.accumulator_register);
     }
 
-    fn bcc(&mut self, instr: Instruction) {
+    fn bcc(&mut self, instr: &Instruction) {
         
     }
   
     pub fn run(&mut self) {
         loop {
-            let mut instruction = find_instruction_by_name(self.mem_read(self.program_counter));
+            let instr = self.mem_read(self.program_counter);
             self.program_counter += 1;
-            match instruction.opcode {
+            let instruction = find_instruction_by_opcode(&instr);
+            match instruction.getOpcode() {
                 0xA9 | 0xA5 | 0xB5 | 0xAD | 0xBD | 0xB9 | 0xA1 | 0xB1 => {
                     self.lda(instruction);
                 }
@@ -222,11 +230,10 @@ pub struct CPU {
                     print!("else!");
                 }
             }
-            self.program_counter += instruction.getIncrement();
+            self.program_counter += *instruction.getIncrement() as u16;
         }
     }
  }
 
- fn main() {let mut cpu = CPU::new();
-    // cpu.run(vec![0xa9, 0x05, 0x00]);
+ fn main() {
  }

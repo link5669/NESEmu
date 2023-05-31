@@ -1,34 +1,38 @@
 use crate::addressing_modes::AddressingMode;
 use lazy_static::lazy_static;
+
+#[derive(Clone)]
 pub struct Instruction {
-    name: &'static str,
+    name: String,
     opcode: u8,
     addressing_mode: AddressingMode,
     increment: u8
 }
 
 impl Instruction {
-    fn new(name: &'static str, opcode: u8, addressing_mode: AddressingMode, increment: u8) -> Self{
+    fn new(name: &str, opcode: u8, addressing_mode: AddressingMode, increment: u8) -> Self{
         Instruction {
-            name,
+            name: String::from(name),
             opcode,
             addressing_mode,
             increment
         }
     }
-    pub fn getAddressingMode(&self) -> AddressingMode {
-        self.addressing_mode
+    pub fn getAddressingMode(&self) -> &AddressingMode {
+        &self.addressing_mode
     }
-    pub fn getIncrement(&self) -> u8 {
-        self.increment
+    pub fn getIncrement(&self) -> &u8 {
+        &self.increment
     }
-    pub fn getOpcode(&self) -> u8 {
-        self.opcode
+    pub fn getOpcode(&self) -> &u8 {
+        &self.opcode
+    }
+    pub fn getName(&self) -> &str {
+        &self.name
     }
 }
-
 lazy_static! {
-    static ref INSTRUCTIONS: Vec<Instruction> = vec![
+    pub static ref INSTRUCTIONS: Vec<Instruction> = vec![
         Instruction::new("LDA", 0xA9, AddressingMode::IMMEDIATE, 1),
         Instruction::new("LDA", 0xA5, AddressingMode::ZERO_PAGE, 2),
         Instruction::new("LDA", 0xB5, AddressingMode::ZERO_PAGE_X, 2),
@@ -76,7 +80,13 @@ lazy_static! {
         Instruction::new("BCC", 0x31, AddressingMode::RELATIVE, 0),
     ];
 }
-
-pub fn find_instruction_by_opcode(opcode: u8) -> Option<&Instruction> {
-    INSTRUCTIONS.iter().find(|instruction| instruction.opcode == opcode)
-}
+    pub fn find_instruction_by_opcode(opcode: u8) -> &'static Instruction {
+        let mut j = 0;
+        while j < INSTRUCTIONS.len() {
+            if INSTRUCTIONS[j].getOpcode() == opcode {
+                return &INSTRUCTIONS[j];
+            }
+            j += 1;
+        }
+        &INSTRUCTIONS[8]
+    }
